@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>jsPlumb Flowchart</title>
+    <!-- 样式 -->
+    <link rel="stylesheet" href="https://cdn.bootcss.com/twitter-bootstrap/4.1.1/css/bootstrap.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.11.1/themes/smoothness/jquery-ui.css">
+    <style>
+        #diagramContainer 
+        {
+            /* margin: 10px; */
+            width: auto;
+            height: 500px;
+            border: 1px solid gray;
+            position: relative;
+            
+        }
+        .item-start
+        {
+            padding: 5px 20px;
+            margin: 0px 10px;
+            position: absolute;
+            border: 1px solid rgb(35, 35, 36);
+            border-radius: 50px;
+            background: #0481e7;
+            cursor: pointer;
+        }
+        .item-normal
+        {
+            padding: 5px 20px;
+            margin: 0px 10px;
+            position: absolute;
+            border: 1px solid rgb(35, 35, 36);
+            border-radius: 10px;
+            background: #f5f5f5;
+            cursor: pointer;
+        }
+        .item-cond
+        {
+            padding: 5px 20px;
+            margin: 0px 10px;
+            position: absolute;
+            border: 1px solid rgb(35, 35, 36);
+            border-radius: 30%;
+            background: #b500fd;
+            cursor: pointer;
+        }
+        .item-end
+        {
+            padding: 5px 20px;
+            margin: 0px 10px;
+            position: absolute;
+            border: 1px solid rgb(35, 35, 36);
+            border-radius: 50%;
+            background: #db0b0b;
+            cursor: pointer;
+        }
+        [class^="item-"] a{
+            color: #000;
+            text-decoration: none;
+        }
+        .csslabel{
+            color: #000;
+        }
+        .displaynone{
+            display: none;
+        }
+    </style>
+</head>
+<body>
+	<div class="wrapper">
+        <div style="text-align: center;width:100%;">
+            <h2>函数调用图</h2>
+        </div>
+        <div id="diagramContainer">
+        
+        </div>
+    </div>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.js"></script>
+    <script type="text/javascript" src="https://cdn.bootcss.com/twitter-bootstrap/4.1.1/js/bootstrap.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/jsplumb.js"></script>
+    <script type="text/javascript" src="js/QFunctionFlowChart.js"></script>
+    <script type="text/javascript" src="js/config.js"></script>
+    <script type="text/javascript" src="js/mini.dialog.js"></script>
+    <script type="text/javascript">
+        var item_node_temp = '<div class="$CLASS" id="$ITEM">\
+            <a href="javascript:void(0)" onclick="OnDetails(this)">$VALUE</a>\
+        </div>'
+        // 加载准备
+        $(document).ready(function()
+        {
+            var width_center = $("#diagramContainer").width() * 0.5 - 100;
+            var chart_config = {}
+            chart_config["id"] = "diagramContainer";
+            /**
+             * 创建所有数据节点- QFunctionFlowChart初始化时会调用，但仅chart有值，其他都是NaN
+             */
+            chart_config['createNodes'] = function(chart, data, row, col)
+            {
+                var data = data || NodesConfig;
+                row = row || width_center;
+                col = col ? col + 120 : 10; 
+                var contain_height = $("#diagramContainer").height();
+                if(contain_height <= col)
+                {
+                    $("#diagramContainer").height(col + 150);
+                }
+                // 创建节点后，会返回节点的ID
+                var item_id = chart.OnCreateNode(data, {"left":row, "top":col});
+                // 遍历子节点列表
+                if(data.hasOwnProperty("next") && data['next'].length > 0)
+                {
+                    var index_array = QFunctionFlowChart.layoutInterval(data['next'].length);
+                    for(var i = 0 ; i < data['next'].length; i++)
+                    {
+                        var row_1 = row + index_array[i] * 200;
+                        var child_id = this.createNodes(chart, data['next'][i], row_1, col);
+                        var anchor = ['Bottom', 'Top'];
+                        if(item_id == child_id)
+                        {
+                            anchor = ['Right', 'Right'];
+                        }
+                        chart.OnConnect(item_id, child_id, anchor, data['next'][i]['connect']);
+                    }
+                }
+                // 返回此节点的ID 
+                return item_id;
+            }
+            // 格式化节点数据
+            chart_config['nodeFormatEvent'] = function(chart, id, data, kwargs)
+            {
+                var item_class = "item-normal";
+                if (data["type"] == 0) {
+                    item_class = "item-start";
+                } else if (data["type"] == 2) {
+                    item_class = "item-cond";
+                }else if (data["type"] == 9) {
+                    item_class = "item-end";
+                }
+                var node = $(item_node_temp.replace("$ITEM", id)
+                    .replace("$VALUE", data['name'])
+                    .replace("$CLASS", item_class));
+                node.css("left",kwargs['left'] + "px");
+                node.css("top", kwargs['top'] + "px");
+                chart.addHtmlNode(node);
+            }
+            QFunctionFlowChart.chart(chart_config);
+        });
+
+        function OnDetails(item)
+        {
+            Dialog({
+                title: $(item).text(),
+                width: 1100,
+                iframeContent: {
+                    src: "file:///E:/Project/2020Code/StructionTest/index.html",
+                    height: 600
+                },
+                showButton: false
+            });
+        }
+    </script>
+</body>
+</html>
